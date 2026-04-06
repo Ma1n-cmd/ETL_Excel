@@ -11,7 +11,6 @@ import time
 
 # Настройки
 folder_path_xlsx = r"C:\Users\Matwey\Desktop\AutomizeParse\test_data\*.xlsx"
-# Теперь работаем с Parquet вместо CSV
 folder_path_parquet = r"C:\Users\Matwey\Desktop\AutomizeParse\test_data\*.parquet"
 workers = 8  # На конвертацию можно больше воркеров
 db_uri = "sqlite://db.db"
@@ -31,7 +30,7 @@ def excel_to_parquet(excel_path):
     """Excel -> Parquet (в 10-50 раз быстрее и компактнее CSV)"""
     try:
         parquet_path = os.path.splitext(excel_path)[0] + ".parquet"
-        # Читаем Excel и сразу пишем в бинарный Parquet
+
         pl.read_excel(excel_path).write_parquet(parquet_path)
         os.remove(excel_path)
         return parquet_path
@@ -70,7 +69,7 @@ def upload_parquet_to_db(parquet_path):
 def main():
     init_db()
 
-    # 1. Конвертация (Здесь многопоточность ОСТАВЛЯЕМ, это быстро)
+    # 1. Конвертация
     start_con = time.time()
     xlsx_files = glob.glob(folder_path_xlsx)
     if xlsx_files:
@@ -79,12 +78,11 @@ def main():
             executor.map(excel_to_parquet, xlsx_files)
     success_con = time.time() - start_con
 
-    # 2. Загрузка (ЗАМЕНЯЕМ СТАРЫЙ БЛОК НА ЭТОТ - СТРОГО В ОДИН ПОТОК)
+    # 2. Загрузка
     start_db = time.time()
     all_parquet = glob.glob(folder_path_parquet)
     if all_parquet:
         print(f"Запись в БД через ADBC (последовательно)...")
-        # Вместо executor.map используем обычный цикл for
         for parquet_file in all_parquet:
             upload_parquet_to_db(parquet_file)
     
