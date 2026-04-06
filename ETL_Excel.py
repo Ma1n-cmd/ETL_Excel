@@ -41,15 +41,12 @@ def excel_to_parquet(excel_path):
 def upload_parquet_to_db(parquet_path):
     """Прямая запись из Polars в SQLite (минуя циклы Python)"""
     try:
-        # Читаем лениво для экономии RAM
         df = pl.read_parquet(parquet_path)
         
         if df.is_empty():
             os.remove(parquet_path)
             return
 
-        # Прямая вставка через движок adbc (нужно: pip install adbc-driver-sqlite)
-        # Это в разы быстрее, чем executemany
         df.select([
             pl.col("id").alias("product_id"),
             pl.col("product").alias("name"),
@@ -97,6 +94,8 @@ def main():
     print(f"Конвертация: {success_con:.2f} сек.")
     print(f"Запись в БД: {success_db:.2f} сек.")
     print(f"Общее время: {(success_con + success_db):.2f} сек.")
+
+
 
 if __name__ == "__main__":
     main()
